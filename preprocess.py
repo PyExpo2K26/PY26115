@@ -1,4 +1,5 @@
 import pandas as pd
+import joblib
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LinearRegression
@@ -67,3 +68,5 @@ r2 = r2_score(y_test, y_pred)
 print("\nModel Evaluation:")
 print("Mean Squared Error (MSE):", mse)
 print("R2 Score:", r2)
+joblib.dump(model, 'flood_model.pkl')
+joblib.dump(scaler, 'scaler.pkl')
