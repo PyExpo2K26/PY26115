@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>River Flood Prediction System - Advanced Dashboard</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #06b6d4;
+            --dark: #0f172a;
+            --dark-light: #1e293b;
+            --card-bg: #1e293b;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+            --shadow: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            opacity: 0.05;
+            pointer-events: none;
+        }
+
+        .wave {
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, var(--primary) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: wave-animation 20s linear infinite;
+        }
+
+        @keyframes wave-animation {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(-50%, -50%); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--card-bg) 0%, var(--dark-light) 100%);
+            padding: 24px 32px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px var(--shadow);
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-subtitle {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 400;
+        }
+
+        .language-selector {
+            display: flex;
+            gap: 8px;
+            background: var(--dark);
+            padding: 4px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .lang-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .lang-btn:hover {
+            color: var(--text-primary);
+            background: var(--dark-light);
+        }
+
+        .lang-btn.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            background: var(--card-bg);
+            padding: 20px 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            border-left: 4px solid var(--success);
+            display: none;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 16px var(--shadow);
+            border: 1px solid var(--border);
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .alert-banner.show {
+            display: flex;
+        }
+
+        .alert-banner.warning {
+            border-left-color: var(--warning);
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(245, 158, 11, 0.1) 100%);
+        }
+
+        .alert-banner.danger {
+            border-left-color: var(--danger);
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(239, 68, 68, 0.1) 100%);
+            animation: shake 0.5s, slideIn 0.4s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        .alert-icon {
+            font-size: 28px;
+            line-height: 1;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-message {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .alert-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 8px 32px var(--shadow);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px var(--shadow);
+            border-color: var(--primary);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .card h2 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-icon {
+            font-size: 20px;
+        }
+
+        /* Risk Meter Card */
+        .risk-card {
+            grid-column: span 6;
+            text-align: center;
+        }
+
+        .risk-meter {
+            position: relative;
+            width: 240px;
+            height: 240px;
+            margin: 24px auto;
+        }
+
+        .risk-circle-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: var(--dark);
+            box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .risk-circle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            background: conic-gradient(
+                from 0deg,
+                var(--success) 0deg,
+                var(--success) calc(var(--risk-percentage) * 3.6deg),
+                transparent calc(var(--risk-percentage) * 3.6deg)
+            );
+        }
+
+        .risk-circle::before {
+            content: '';
+            position: absolute;
+            width: 80%;
+            height: 80%;
+            background: var(--card-bg);
+            border-radius: 50%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .risk-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .risk-percentage {
+            font-size: 56px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--success) 0%, var(--info) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .risk-label {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            color: var(--text-secondary);
+        }
+
+        .risk-low .risk-circle {
+            background: conic-gradient(
+                from 0deg,
+                var(--success) 0deg,
+                var(--success) calc(var(--risk-percentage) * 3.6deg),
+                transparent calc(var(--risk-percentage) * 3.6deg)
+            );
+        }
+
+        .risk-low .risk-percentage {
+            background: linear-gradient(135deg, var(--success) 0%, var(--info) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .risk-medium .risk-circle {
+            background: conic-gradient(
+                from 0deg,
+                var(--warning) 0deg,
+                var(--warning) calc(var(--risk-percentage) * 3.6deg),
+                transparent calc(var(--risk-percentage) * 3.6deg)
+            );
+        }
+
+        .risk-medium .risk-percentage {
+            background: linear-gradient(135deg, var(--warning) 0%, #f97316 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .risk-high .risk-circle {
+            background: conic-gradient(
+                from 0deg,
+                var(--danger) 0deg,
+                var(--danger) calc(var(--risk-percentage) * 3.6deg),
+                transparent calc(var(--risk-percentage) * 3.6deg)
+            );
+            animation: pulse 2s infinite;
+        }
+
+        .risk-high .risk-percentage {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .risk-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.6;
+            margin-top: 16px;
+        }
+
+        /* SOS Card */
+        .sos-card {
+            grid-column: span 6;
+            text-align: center;
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(239, 68, 68, 0.05) 100%);
+        }
+
+        .sos-button {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            border: 6px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 36px;
+            font-weight: 800;
+            cursor: pointer;
+            box-shadow: 0 12px 40px rgba(239, 68, 68, 0.4);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 24px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sos-button::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+            animation: sosPulse 2s infinite;
+        }
+
+        @keyframes sosPulse {
+            0%, 100% { transform: scale(0); opacity: 0.5; }
+            50% { transform: scale(1.5); opacity: 0; }
+        }
+
+        .sos-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 16px 48px rgba(239, 68, 68, 0.6);
+        }
+
+        .sos-button:active {
+            transform: scale(0.95);
+        }
+
+        .sos-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .sos-info {
+            color: var(--text-secondary);
+            font-size: 13px;
+            line-height: 1.6;
+            margin-top: 16px;
+        }
+
+        .sos-status {
+            margin-top: 16px;
+            font-weight: 600;
+            font-size: 14px;
+            min-height: 20px;
+        }
+
+        /* Sensor Data Card */
+        .data-card {
+            grid-column: span 12;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .data-item {
+            background: var(--dark);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .data-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            transition: all 0.3s;
+        }
+
+        .data-item.safe::before {
+            background: linear-gradient(180deg, #10b981 0%, #059669 100%);
+        }
+
+        .data-item.warning::before {
+            background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .data-item.danger::before {
+            background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .data-item:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .data-item.safe {
+            background: linear-gradient(135deg, var(--dark) 0%, rgba(16, 185, 129, 0.05) 100%);
+        }
+
+        .data-item.warning {
+            background: linear-gradient(135deg, var(--dark) 0%, rgba(245, 158, 11, 0.05) 100%);
+        }
+
+        .data-item.danger {
+            background: linear-gradient(135deg, var(--dark) 0%, rgba(239, 68, 68, 0.05) 100%);
+        }
+
+        .data-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .data-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1;
+        }
+
+        .data-unit {
+            font-size: 16px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            margin-left: 4px;
+        }
+
+        .data-trend {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .trend-up {
+            color: var(--danger);
+        }
+
+        .trend-down {
+            color: var(--success);
+        }
+
+        .trend-neutral {
+            color: var(--text-secondary);
+        }
+
+        /* Heatmap Card */
+        .heatmap-card {
+            grid-column: span 12;
+        }
+
+        .heatmap-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .heatmap-zone {
+            background: var(--dark);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .heatmap-zone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+            z-index: 0;
+            transition: opacity 0.3s;
+        }
+
+        .heatmap-zone.safe::before {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .heatmap-zone.warning::before {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        }
+
+        .heatmap-zone.danger::before {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .heatmap-zone:hover::before {
+            opacity: 0.15;
+        }
+
+        .heatmap-zone.safe {
+            border-color: #10b981;
+        }
+
+        .heatmap-zone.warning {
+            border-color: #f59e0b;
+        }
+
+        .heatmap-zone.danger {
+            border-color: #ef4444;
+            animation: dangerPulse 2s infinite;
+        }
+
+        @keyframes dangerPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.2); }
+        }
+
+        .heatmap-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .zone-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .zone-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .zone-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .zone-status.safe {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .zone-status.warning {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .zone-status.danger {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .zone-level {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 8px 0;
+        }
+
+        .zone-level.safe {
+            color: #10b981;
+        }
+
+        .zone-level.warning {
+            color: #f59e0b;
+        }
+
+        .zone-level.danger {
+            color: #ef4444;
+        }
+
+        .zone-info {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        /* Alert History Card */
+        .history-card {
+            grid-column: span 6;
+        }
+
+        .alert-history {
+            max-height: 320px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .alert-history::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .alert-history::-webkit-scrollbar-track {
+            background: var(--dark);
+            border-radius: 3px;
+        }
+
+        .alert-history::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        .alert-history::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+
+        .history-item {
+            padding: 16px;
+            background: var(--dark);
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border-left: 3px solid var(--primary);
+            border: 1px solid var(--border);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: start;
+            gap: 12px;
+        }
+
+        .history-item:hover {
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .history-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .history-content {
+            flex: 1;
+        }
+
+        .history-time {
+            color: var(--text-secondary);
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .history-message {
+            color: var(--text-primary);
+            margin-top: 4px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* Statistics Card */
+        .stats-card {
+            grid-column: span 6;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 16px;
+            background: var(--dark);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 20px;
+            background: var(--card-bg);
+            border-radius: 50px;
+            box-shadow: 0 8px 32px var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+            animation: blink 2s infinite;
+        }
+
+        .status-dot.offline {
+            background: var(--danger);
+            box-shadow: 0 0 10px var(--danger);
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .status-text {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .risk-card,
+            .sos-card,
+            .data-card,
+            .heatmap-card,
+            .history-card,
+            .stats-card {
+                grid-column: span 12;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .header h1 {
+                font-size: 22px;
+            }
+
+            .dashboard-grid {
+                gap: 16px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .risk-meter {
+                width: 200px;
+                height: 200px;
+            }
+
+            .risk-percentage {
+                font-size: 48px;
+            }
+
+            .sos-button {
+                width: 150px;
+                height: 150px;
+                font-size: 32px;
+            }
+
+            .connection-status {
+                bottom: 16px;
+                right: 16px;
+            }
+        }
+
+        /* Custom Animations */
+        .fade-in {
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .last-updated {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-top: 24px;
+            padding: 12px;
+            background: var(--card-bg);
+            border-radius: 10px;
+            border: 1px solid var(--border);
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="wave"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header fade-in">
+            <div class="header-left">
+                <div class="logo">🌊</div>
+                <div>
+                    <h1 id="page-title">River Flood Prediction System</h1>
+                    <div class="header-subtitle">Real-time Monitoring & Advanced Analytics</div>
+                </div>
+            </div>
+            <div class="language-selector">
+                <button class="lang-btn active" onclick="changeLanguage('en')">English</button>
+                <button class="lang-btn" onclick="changeLanguage('hi')">हिंदी</button>
+                <button class="lang-btn" onclick="changeLanguage('ta')">தமிழ்</button>
+                <button class="lang-btn" onclick="changeLanguage('te')">తెలుగు</button>
+                <button class="lang-btn" onclick="changeLanguage('ml')">മലയാളം</button>
+            </div>
+        </div>
+
+        <!-- Alert Banner -->
+        <div class="alert-banner" id="alertBanner">
+            <span class="alert-icon" id="alertIcon">✅</span>
+            <div class="alert-content">
+                <div class="alert-message" id="alertText">No active alerts</div>
+                <div class="alert-time" id="alertTime">Last updated: Just now</div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard -->
+        <div class="dashboard-grid">
+            <!-- Flood Risk Meter -->
+            <div class="card risk-card fade-in">
+                <div class="card-header">
+                    <h2><span class="card-icon">📊</span><span id="risk-title">Flood Risk Level</span></h2>
+                </div>
+                <div class="risk-meter risk-low" id="riskMeter" style="--risk-percentage: 15">
+                    <div class="risk-circle-bg"></div>
+                    <div class="risk-circle">
+                        <div class="risk-content">
+                            <div class="risk-percentage" id="riskPercentage">15%</div>
+                            <div class="risk-label" id="riskLabel">LOW RISK</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="risk-description" id="risk-description">
+                    Current conditions are safe. Continue normal activities with regular monitoring.
+                </p>
+            </div>
+
+            <!-- SOS Emergency -->
+            <div class="card sos-card fade-in">
+                <div class="card-header">
+                    <h2><span class="card-icon">🚨</span><span id="sos-title">Emergency SOS</span></h2>
+                </div>
+                <button class="sos-button" onclick="sendSOS()" id="sosButton">
+                    SOS
+                </button>
+                <p class="sos-info" id="sos-info">
+                    Press to send emergency alert with your location to authorities and nearby response teams
+                </p>
+                <div class="sos-status" id="sos-status"></div>
+            </div>
+
+            <!-- Current Sensor Data -->
+            <div class="card data-card fade-in">
+                <div class="card-header">
+                    <h2><span class="card-icon">📡</span><span id="data-title">Live Sensor Data</span></h2>
+                </div>
+                <div class="data-grid">
+                    <div class="data-item safe" id="waterItem">
+                        <div class="data-label" id="label-water">💧 Water Level</div>
+                        <div class="data-value" id="waterLevel">2.3<span class="data-unit">m</span></div>
+                        <div class="data-trend trend-neutral">
+                            <span>→</span> <span>Stable</span>
+                        </div>
+                    </div>
+                    <div class="data-item safe" id="rainfallItem">
+                        <div class="data-label" id="label-rainfall">🌧️ Rainfall</div>
+                        <div class="data-value" id="rainfall">45<span class="data-unit">mm</span></div>
+                        <div class="data-trend trend-down">
+                            <span>↓</span> <span>Decreasing</span>
+                        </div>
+                    </div>
+                    <div class="data-item safe" id="tempItem">
+                        <div class="data-label" id="label-temp">🌡️ Temperature</div>
+                        <div class="data-value" id="temperature">28<span class="data-unit">°C</span></div>
+                        <div class="data-trend trend-neutral">
+                            <span>→</span> <span>Normal</span>
+                        </div>
+                    </div>
+                    <div class="data-item safe" id="humidityItem">
+                        <div class="data-label" id="label-humidity">💨 Humidity</div>
+                        <div class="data-value" id="humidity">65<span class="data-unit">%</span></div>
+                        <div class="data-trend trend-up">
+                            <span>↑</span> <span>Rising</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Heatmap Zones -->
+            <div class="card heatmap-card fade-in">
+                <div class="card-header">
+                    <h2><span class="card-icon">🗺️</span><span id="heatmap-title">Regional Heatmap</span></h2>
+                </div>
+                <div class="heatmap-container">
+                    <div class="heatmap-zone safe" id="zone1">
+                        <div class="heatmap-content">
+                            <div class="zone-header">
+                                <span class="zone-name" id="zone1-name">Upstream Zone</span>
+                                <span class="zone-status safe" id="zone1-status">SAFE</span>
+                            </div>
+                            <div class="zone-level safe">2.1m</div>
+                            <div class="zone-info" id="zone1-info">Water level: Normal | Risk: Low</div>
+                        </div>
+                    </div>
+                    <div class="heatmap-zone warning" id="zone2">
+                        <div class="heatmap-content">
+                            <div class="zone-header">
+                                <span class="zone-name" id="zone2-name">Midstream Zone</span>
+                                <span class="zone-status warning" id="zone2-status">ALERT</span>
+                            </div>
+                            <div class="zone-level warning">3.8m</div>
+                            <div class="zone-info" id="zone2-info">Water level: Elevated | Risk: Medium</div>
+                        </div>
+                    </div>
+                    <div class="heatmap-zone safe" id="zone3">
+                        <div class="heatmap-content">
+                            <div class="zone-header">
+                                <span class="zone-name" id="zone3-name">Downstream Zone</span>
+                                <span class="zone-status safe" id="zone3-status">SAFE</span>
+                            </div>
+                            <div class="zone-level safe">2.5m</div>
+                            <div class="zone-info" id="zone3-info">Water level: Normal | Risk: Low</div>
+                        </div>
+                    </div>
+                    <div class="heatmap-zone danger" id="zone4">
+                        <div class="heatmap-content">
+                            <div class="zone-header">
+                                <span class="zone-name" id="zone4-name">Low-lying Area</span>
+                                <span class="zone-status danger" id="zone4-status">DANGER</span>
+                            </div>
+                            <div class="zone-level danger">5.2m</div>
+                            <div class="zone-info" id="zone4-info">Water level: Critical | Risk: High</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Alert History -->
+            <div class="card history-card fade-in">
+                <div class="card-header">
+                    <h2><span class="card-icon">🔔</span><span id="history-title">Recent Alerts</span></h2>
+                </div>
+                <div class="alert-history" id="alertHistory">
+                    <div class="history-item">
+                        <span class="history-icon">✅</span>
+                        <div class="history-content">
+                            <div class="history-time">2 hours ago</div>
+                            <div class="history-message">Water level normalized to safe range</div>
+                        </div>
+                    </div>
+                    <div class="history-item">
+                        <span class="history-icon">🟡</span>
+                        <div class="history-content">
+                            <div class="history-time">5 hours ago</div>
+                            <div class="history-message">Moderate rainfall detected in upstream areas</div>
+                        </div>
+                    </div>
+                    <div class="history-item">
+                        <span class="history-icon">✅</span>
+                        <div class="history-content">
+                            <div class="history-time">1 day ago</div>
+                            <div class="history-message">Routine system health check completed successfully</div>
+                        </div>
+                    </div>
+                    <div class="history-item">
+                        <span class="history-icon">📊</span>
+                        <div class="history-content">
+                            <div class="history-time">2 days ago</div>
+                            <div class="history-message">Sensor calibration and maintenance performed</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistics -->
+            <div class="card stats-card fade-in">
+                <div class="card-header">
+                    <h2><span class="card-icon">📈</span><span id="stats-title">24h Statistics</span></h2>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value">2.8m</div>
+                        <div class="stat-label">Peak Level</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">124mm</div>
+                        <div class="stat-label">Total Rainfall</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">98%</div>
+                        <div class="stat-label">System Uptime</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value">0</div>
+                        <div class="stat-label">Critical Alerts</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="last-updated" id="lastUpdated">
+            Last updated: <span id="updateTime">--:--:--</span>
+        </div>
+
+        <!-- Connection Status -->
+        <div class="connection-status">
+            <div class="status-dot" id="statusDot"></div>
+            <span class="status-text" id="statusText">Online - API Active</span>
+        </div>
+    </div>
+
+    <script>
+        // Language translations
+        const translations = {
+            en: {
+                pageTitle: 'River Flood Prediction System',
+                riskTitle: 'Flood Risk Level',
+                sosTitle: 'Emergency SOS',
+                sosInfo: 'Press to send emergency alert with your location to authorities and nearby response teams',
+                dataTitle: 'Live Sensor Data',
+                heatmapTitle: 'Regional Heatmap',
+                historyTitle: 'Recent Alerts',
+                statsTitle: '24h Statistics',
+                labelWater: '💧 Water Level',
+                labelRainfall: '🌧️ Rainfall',
+                labelTemp: '🌡️ Temperature',
+                labelHumidity: '💨 Humidity',
+                riskLow: 'LOW RISK',
+                riskMedium: 'MEDIUM RISK',
+                riskHigh: 'HIGH RISK',
+                descLow: 'Current conditions are safe. Continue normal activities with regular monitoring.',
+                descMedium: 'Moderate flood risk detected. Stay alert, monitor updates, and prepare evacuation plans.',
+                descHigh: 'CRITICAL FLOOD RISK! Evacuate to higher ground immediately and follow emergency protocols!',
+                alertLow: 'All systems operational. No flood risk currently detected.',
+                alertMedium: 'MODERATE FLOOD WARNING - Increased water levels detected. Stay alert and prepare for evacuation.',
+                alertHigh: 'SEVERE FLOOD ALERT! Immediate evacuation required. Move to designated safe zones now!',
+                sosSuccess: 'SOS sent successfully! Emergency services have been notified. Help is on the way.',
+                sosError: 'Failed to send SOS. Please try again or contact emergency services directly.',
+                statusOnline: 'Online - API Active',
+                statusOffline: 'Offline - SMS Mode Active',
+                lastUpdated: 'Last updated: ',
+                zone1Name: 'Upstream Zone',
+                zone2Name: 'Midstream Zone',
+                zone3Name: 'Downstream Zone',
+                zone4Name: 'Low-lying Area',
+                zoneSafe: 'SAFE',
+                zoneAlert: 'ALERT',
+                zoneDanger: 'DANGER',
+                zoneInfoSafe: 'Water level: Normal | Risk: Low',
+                zoneInfoWarning: 'Water level: Elevated | Risk: Medium',
+                zoneInfoDanger: 'Water level: Critical | Risk: High'
+            },
+            hi: {
+                pageTitle: 'नदी बाढ़ पूर्वानुमान प्रणाली',
+                riskTitle: 'बाढ़ जोखिम स्तर',
+                sosTitle: 'आपातकालीन SOS',
+                sosInfo: 'अधिकारियों और निकटवर्ती प्रतिक्रिया टीमों को अपने स्थान के साथ आपातकालीन अलर्ट भेजने के लिए दबाएं',
+                dataTitle: 'लाइव सेंसर डेटा',
+                heatmapTitle: 'क्षेत्रीय हीटमैप',
+                historyTitle: 'हाल की चेतावनियाँ',
+                statsTitle: '24 घंटे के आंकड़े',
+                labelWater: '💧 जल स्तर',
+                labelRainfall: '🌧️ वर्षा',
+                labelTemp: '🌡️ तापमान',
+                labelHumidity: '💨 आर्द्रता',
+                riskLow: 'कम जोखिम',
+                riskMedium: 'मध्यम जोखिम',
+                riskHigh: 'उच्च जोखिम',
+                descLow: 'वर्तमान स्थितियां सुरक्षित हैं। नियमित निगरानी के साथ सामान्य गतिविधियां जारी रखें।',
+                descMedium: 'मध्यम बाढ़ जोखिम का पता चला। सतर्क रहें, अपडेट की निगरानी करें और निकासी योजना तैयार करें।',
+                descHigh: 'गंभीर बाढ़ जोखिम! तुरंत ऊंची जगह पर जाएं और आपातकालीन प्रोटोकॉल का पालन करें!',
+                alertLow: 'सभी सिस्टम सामान्य। वर्तमान में कोई बाढ़ का खतरा नहीं।',
+                alertMedium: 'मध्यम बाढ़ चेतावनी - बढ़ा हुआ जल स्तर। सतर्क रहें और निकासी के लिए तैयार रहें।',
+                alertHigh: 'गंभीर बाढ़ चेतावनी! तत्काल निकासी आवश्यक। अभी निर्धारित सुरक्षित क्षेत्रों में जाएं!',
+                sosSuccess: 'SOS सफलतापूर्वक भेजा गया! आपातकालीन सेवाओं को सूचित किया गया है। मदद आ रही है।',
+                sosError: 'SOS भेजने में विफल। कृपया पुनः प्रयास करें या आपातकालीन सेवाओं से सीधे संपर्क करें।',
+                statusOnline: 'ऑनलाइन - API सक्रिय',
+                statusOffline: 'ऑफलाइन - SMS मोड सक्रिय',
+                lastUpdated: 'अंतिम अपडेट: ',
+                zone1Name: 'अपस्ट्रीम क्षेत्र',
+                zone2Name: 'मिडस्ट्रीम क्षेत्र',
+                zone3Name: 'डाउनस्ट्रीम क्षेत्र',
+                zone4Name: 'निचला क्षेत्र',
+                zoneSafe: 'सुरक्षित',
+                zoneAlert: 'सतर्कता',
+                zoneDanger: 'खतरा',
+                zoneInfoSafe: 'जल स्तर: सामान्य | जोखिम: कम',
+                zoneInfoWarning: 'जल स्तर: उच्च | जोखिम: मध्यम',
+                zoneInfoDanger: 'जल स्तर: गंभीर | जोखिम: उच्च'
+            },
+            ta: {
+                pageTitle: 'ஆற்று வெள்ளப் பூர்வகணிப்பு அமைப்பு',
+                riskTitle: 'வெள்ள அபாய நிலை',
+                sosTitle: 'அவசர SOS',
+                sosInfo: 'உங்கள் இருப்பிடத்துடன் அவசர எச்சரிக்கையை அதிகாரிகள் மற்றும் அருகிலுள்ள பதில் குழுக்களுக்கு அனுப்ப அழுத்தவும்',
+                dataTitle: 'நேரடி சென்சார் தரவு',
+                heatmapTitle: 'பிராந்திய வெப்ப வரைபடம்',
+                historyTitle: 'சமீபத்திய எச்சரிக்கைகள்',
+                statsTitle: '24 மணி நேர புள்ளிவிவரங்கள்',
+                labelWater: '💧 நீர் மட்டம்',
+                labelRainfall: '🌧️ மழை',
+                labelTemp: '🌡️ வெப்பநிலை',
+                labelHumidity: '💨 ஈரப்பதம்',
+                riskLow: 'குறைந்த அபாயம்',
+                riskMedium: 'நடுத்தர அபாயம்',
+                riskHigh: 'அதிக அபாயம்',
+                descLow: 'தற்போதைய நிலைமைகள் பாதுகாப்பானவை. வழக்கமான கண்காணிப்புடன் சாதாரண செயல்பாடுகளைத் தொடரவும்.',
+                descMedium: 'நடுத்தர வெள்ள அபாயம் கண்டறியப்பட்டது. விழிப்புடன் இருங்கள், புதுப்பிப்புகளைக் கண்காணித்து வெளியேற்ற திட்டங்களைத் தயாரிக்கவும்.',
+                descHigh: 'கடுமையான வெள்ள அபாயம்! உடனடியாக உயர்ந்த இடத்திற்குச் சென்று அவசர நெறிமுறைகளைப் பின்பற்றவும்!',
+                alertLow: 'அனைத்து அமைப்புகளும் இயங்குகின்றன. தற்போது வெள்ள அபாயம் இல்லை.',
+                alertMedium: 'நடுத்தர வெள்ள எச்சரிக்கை - அதிகரித்த நீர் மட்டம். விழிப்புடன் இருங்கள் மற்றும் வெளியேற தயாராக இருங்கள்.',
+                alertHigh: 'கடுமையான வெள்ள எச்சரிக்கை! உடனடி வெளியேற்றம் தேவை. இப்போதே நியமிக்கப்பட்ட பாதுகாப்பு மண்டலங்களுக்குச் செல்லுங்கள்!',
+                sosSuccess: 'SOS வெற்றிகரமாக அனுப்பப்பட்டது! அவசர சேவைகள் அறிவிக்கப்பட்டுள்ளன. உதவி வருகிறது.',
+                sosError: 'SOS அனுப்புவதில் தோல்வி. மீண்டும் முயற்சிக்கவும் அல்லது அவசர சேவைகளை நேரடியாக தொடர்பு கொள்ளவும்.',
+                statusOnline: 'ஆன்லைன் - API செயலில்',
+                statusOffline: 'ஆஃப்லைன் - SMS பயன்முறை செயலில்',
+                lastUpdated: 'கடைசியாக புதுப்பிக்கப்பட்டது: ',
+                zone1Name: 'மேல்நீரோட்டம் மண்டலம்',
+                zone2Name: 'நடு நீரோட்டம் மண்டலம்',
+                zone3Name: 'கீழ்நீரோட்டம் மண்டலம்',
+                zone4Name: 'தாழ்வான பகுதி',
+                zoneSafe: 'பாதுகாப்பு',
+                zoneAlert: 'எச்சரிக்கை',
+                zoneDanger: 'ஆபத்து',
+                zoneInfoSafe: 'நீர் மட்டம்: சாதாரண | அபாயம்: குறைவு',
+                zoneInfoWarning: 'நீர் மட்டம்: உயர்வு | அபாயம்: நடுத்தரம்',
+                zoneInfoDanger: 'நீர் மட்டம்: கடுமை | அபாயம்: அதிகம்'
+            },
+            te: {
+                pageTitle: 'నది వరద అంచనా వ్యవస్థ',
+                riskTitle: 'వరద ప్రమాద స్థాయి',
+                sosTitle: 'అత్యవసర SOS',
+                sosInfo: 'మీ స్థానంతో అత్యవసర హెచ్చరికను అధికారులు మరియు సమీప ప్రతిస్పందన బృందాలకు పంపడానికి నొక్కండి',
+                dataTitle: 'ప్రత్యక్ష సెన్సార్ డేటా',
+                heatmapTitle: 'ప్రాంతీయ హీట్‌మ్యాప్',
+                historyTitle: 'ఇటీవలి హెచ్చరికలు',
+                statsTitle: '24 గంటల గణాంకాలు',
+                labelWater: '💧 నీటి మట్టం',
+                labelRainfall: '🌧️ వర్షపాతం',
+                labelTemp: '🌡️ ఉష్ణోగ్రత',
+                labelHumidity: '💨 తేమ',
+                riskLow: 'తక్కువ ప్రమాదం',
+                riskMedium: 'మధ్యస్థ ప్రమాదం',
+                riskHigh: 'అధిక ప్రమాదం',
+                descLow: 'ప్రస్తుత పరిస్థితులు సురక్షితంగా ఉన్నాయి. నియమిత పర్యవేక్షణతో సాధారణ కార్యకలాపాలు కొనసాగించండి.',
+                descMedium: 'మధ్యస్థ వరద ప్రమాదం గుర్తించబడింది. అప్రమత్తంగా ఉండండి, నవీకరణలను పర్యవేక్షించండి మరియు తరలింపు ప్రణాళికలను సిద్ధం చేయండి.',
+                descHigh: 'తీవ్రమైన వరద ప్రమాదం! వెంటనే ఎత్తైన ప్రదేశానికి వెళ్ళండి మరియు అత్యవసర ప్రోటోకాల్‌లను అనుసరించండి!',
+                alertLow: 'అన్ని వ్యవస్థలు పనిచేస్తున్నాయి. ప్రస్తుతం వరద ప్రమాదం లేదు.',
+                alertMedium: 'మధ్యస్థ వరద హెచ్చరిక - పెరిగిన నీటి మట్టాలు. అప్రమత్తంగా ఉండండి మరియు తరలింపుకు సిద్ధంగా ఉండండి.',
+                alertHigh: 'తీవ్రమైన వరద హెచ్చరిక! తక్షణ తరలింపు అవసరం. ఇప్పుడే నిర్దేశించిన సురక్షిత ప్రాంతాలకు వెళ్ళండి!',
+                sosSuccess: 'SOS విజయవంతంగా పంపబడింది! అత్యవసర సేవలకు తెలియజేయబడింది. సహాయం వస్తోంది.',
+                sosError: 'SOS పంపడంలో విఫలమైంది. దయచేసి మళ్లీ ప్రయత్నించండి లేదా అత్యవసర సేవలను నేరుగా సంప్రదించండి.',
+                statusOnline: 'ఆన్‌లైన్ - API క్రియాశీలం',
+                statusOffline: 'ఆఫ్‌లైన్ - SMS మోడ్ క్రియాశీలం',
+                lastUpdated: 'చివరిగా నవీకరించబడింది: ',
+                zone1Name: 'అప్‌స్ట్రీమ్ జోన్',
+                zone2Name: 'మిడ్‌స్ట్రీమ్ జోన్',
+                zone3Name: 'డౌన్‌స్ట్రీమ్ జోన్',
+                zone4Name: 'లోతట్టు ప్రాంతం',
+                zoneSafe: 'సురక్షితం',
+                zoneAlert: 'హెచ్చరిక',
+                zoneDanger: 'ప్రమాదం',
+                zoneInfoSafe: 'నీటి మట్టం: సాధారణం | ప్రమాదం: తక్కువ',
+                zoneInfoWarning: 'నీటి మట్టం: ఎక్కువ | ప్రమాదం: మధ్యస్థం',
+                zoneInfoDanger: 'నీటి మట్టం: క్లిష్టం | ప్రమాదం: అధికం'
+            },
+            ml: {
+                pageTitle: 'നദീ വെള്ളപ്പൊക്ക പ്രവചന സംവിധാനം',
+                riskTitle: 'വെള്ളപ്പൊക്ക അപകട നില',
+                sosTitle: 'അടിയന്തര SOS',
+                sosInfo: 'നിങ്ങളുടെ സ്ഥാനവുമായി അടിയന്തര മുന്നറിയിപ്പ് അധികാരികൾക്കും സമീപ പ്രതികരണ സംഘങ്ങൾക്കും അയയ്ക്കാൻ അമർത്തുക',
+                dataTitle: 'തത്സമയ സെൻസർ ഡാറ്റ',
+                heatmapTitle: 'പ്രാദേശിക ഹീറ്റ്മാപ്പ്',
+                historyTitle: 'സമീപകാല മുന്നറിയിപ്പുകൾ',
+                statsTitle: '24 മണിക്കൂർ സ്ഥിതിവിവരക്കണക്കുകൾ',
+                labelWater: '💧 ജലനിരപ്പ്',
+                labelRainfall: '🌧️ മഴ',
+                labelTemp: '🌡️ താപനില',
+                labelHumidity: '💨 ആർദ്രത',
+                riskLow: 'കുറഞ്ഞ അപകടം',
+                riskMedium: 'ഇടത്തരം അപകടം',
+                riskHigh: 'ഉയർന്ന അപകടം',
+                descLow: 'നിലവിലെ സാഹചര്യങ്ങൾ സുരക്ഷിതമാണ്. പതിവ് നിരീക്ഷണത്തോടെ സാധാരണ പ്രവർത്തനങ്ങൾ തുടരുക.',
+                descMedium: 'ഇടത്തരം വെള്ളപ്പൊക്ക അപകടം കണ്ടെത്തി. ജാഗ്രത പാലിക്കുക, അപ്‌ഡേറ്റുകൾ നിരീക്ഷിക്കുക, ഒഴിപ്പിക്കൽ പദ്ധതികൾ തയ്യാറാക്കുക.',
+                descHigh: 'ഗുരുതരമായ വെള്ളപ്പൊക്ക അപകടം! ഉടനടി ഉയർന്ന സ്ഥലത്തേക്ക് പോകുക, അടിയന്തര നടപടിക്രമങ്ങൾ പാലിക്കുക!',
+                alertLow: 'എല്ലാ സംവിധാനങ്ങളും പ്രവർത്തനക്ഷമം. നിലവിൽ വെള്ളപ്പൊക്ക അപകടം കണ്ടെത്തിയിട്ടില്ല.',
+                alertMedium: 'ഇടത്തരം വെള്ളപ്പൊക്ക മുന്നറിയിപ്പ് - വർദ്ധിച്ച ജലനിരപ്പ്. ജാഗ്രത പാലിക്കുക, ഒഴിപ്പിക്കലിനായി തയ്യാറാകുക.',
+                alertHigh: 'ഗുരുതരമായ വെള്ളപ്പൊക്ക മുന്നറിയിപ്പ്! ഉടനടി ഒഴിപ്പിക്കൽ ആവശ്യമാണ്. ഇപ്പോൾ നിയുക്ത സുരക്ഷിത മേഖലകളിലേക്ക് പോകുക!',
+                sosSuccess: 'SOS വിജയകരമായി അയച്ചു! അടിയന്തര സേവനങ്ങളെ അറിയിച്ചു. സഹായം വരുന്നു.',
+                sosError: 'SOS അയയ്ക്കുന്നതിൽ പരാജയപ്പെട്ടു. വീണ്ടും ശ്രമിക്കുക അല്ലെങ്കിൽ അടിയന്തര സേവനങ്ങളെ നേരിട്ട് ബന്ധപ്പെടുക.',
+                statusOnline: 'ഓൺലൈൻ - API സജീവം',
+                statusOffline: 'ഓഫ്‌ലൈൻ - SMS മോഡ് സജീവം',
+                lastUpdated: 'അവസാനം അപ്‌ഡേറ്റ് ചെയ്തത്: ',
+                zone1Name: 'അപ്‌സ്ട്രീം മേഖല',
+                zone2Name: 'മിഡ്‌സ്ട്രീം മേഖല',
+                zone3Name: 'ഡൗൺസ്ട്രീം മേഖല',
+                zone4Name: 'താഴ്ന്ന പ്രദേശം',
+                zoneSafe: 'സുരക്ഷിതം',
+                zoneAlert: 'മുന്നറിയിപ്പ്',
+                zoneDanger: 'അപകടം',
+                zoneInfoSafe: 'ജലനിരപ്പ്: സാധാരണ | അപകടം: കുറഞ്ഞത്',
+                zoneInfoWarning: 'ജലനിരപ്പ്: ഉയർന്നത് | അപകടം: ഇടത്തരം',
+                zoneInfoDanger: 'ജലനിരപ്പ്: ഗുരുതരം | അപകടം: ഉയർന്നത്'
+            }
+        };
+
+        let currentLanguage = 'en';
+
+        // Change Language Function
+        function changeLanguage(lang) {
+            currentLanguage = lang;
+            const t = translations[lang];
+
+            // Update all text elements
+            document.getElementById('page-title').textContent = t.pageTitle;
+            document.getElementById('risk-title').textContent = t.riskTitle;
+            document.getElementById('sos-title').textContent = t.sosTitle;
+            document.getElementById('sos-info').textContent = t.sosInfo;
+            document.getElementById('data-title').textContent = t.dataTitle;
+            document.getElementById('heatmap-title').textContent = t.heatmapTitle;
+            document.getElementById('history-title').textContent = t.historyTitle;
+            document.getElementById('stats-title').textContent = t.statsTitle;
+            document.getElementById('label-water').textContent = t.labelWater;
+            document.getElementById('label-rainfall').textContent = t.labelRainfall;
+            document.getElementById('label-temp').textContent = t.labelTemp;
+            document.getElementById('label-humidity').textContent = t.labelHumidity;
+            document.getElementById('statusText').textContent = t.statusOnline;
+
+            // Update zone names
+            document.getElementById('zone1-name').textContent = t.zone1Name;
+            document.getElementById('zone2-name').textContent = t.zone2Name;
+            document.getElementById('zone3-name').textContent = t.zone3Name;
+            document.getElementById('zone4-name').textContent = t.zone4Name;
+            
+            document.getElementById('zone1-status').textContent = t.zoneSafe;
+            document.getElementById('zone2-status').textContent = t.zoneAlert;
+            document.getElementById('zone3-status').textContent = t.zoneSafe;
+            document.getElementById('zone4-status').textContent = t.zoneDanger;
+
+            document.getElementById('zone1-info').textContent = t.zoneInfoSafe;
+            document.getElementById('zone2-info').textContent = t.zoneInfoWarning;
+            document.getElementById('zone3-info').textContent = t.zoneInfoSafe;
+            document.getElementById('zone4-info').textContent = t.zoneInfoDanger;
+
+            // Update active language button
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update risk description based on current risk level
+            updateRiskDescription();
+        }
+
+        // Update Risk Description
+        function updateRiskDescription() {
+            const t = translations[currentLanguage];
+            const riskMeter = document.getElementById('riskMeter');
+            
+            if (riskMeter.classList.contains('risk-low')) {
+                document.getElementById('risk-description').textContent = t.descLow;
+                document.getElementById('alertText').textContent = t.alertLow;
+                document.getElementById('alertIcon').textContent = '✅';
+            } else if (riskMeter.classList.contains('risk-medium')) {
+                document.getElementById('risk-description').textContent = t.descMedium;
+                document.getElementById('alertText').textContent = t.alertMedium;
+                document.getElementById('alertIcon').textContent = '🟡';
+            } else if (riskMeter.classList.contains('risk-high')) {
+                document.getElementById('risk-description').textContent = t.descHigh;
+                document.getElementById('alertText').textContent = t.alertHigh;
+                document.getElementById('alertIcon').textContent = '⚠️';
+            }
+        }
+
+        // Send SOS Function
+        function sendSOS() {
+            const sosButton = document.getElementById('sosButton');
+            const sosStatus = document.getElementById('sos-status');
+            const t = translations[currentLanguage];
+
+            // Disable button
+            sosButton.disabled = true;
+            sosButton.style.opacity = '0.6';
+            sosStatus.textContent = 'Sending emergency alert...';
+            sosStatus.style.color = 'var(--warning)';
+
+            // Get user location
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        const lat = position.coords.latitude;
+                        const lon = position.coords.longitude;
+
+                        // Send SOS to backend
+                        fetch('/api/send_sos', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                location: { lat, lon },
+                                timestamp: new Date().toISOString(),
+                                language: currentLanguage
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            sosStatus.textContent = t.sosSuccess;
+                            sosStatus.style.color = 'var(--success)';
+                            
+                            // Re-enable button after 5 seconds
+                            setTimeout(() => {
+                                sosButton.disabled = false;
+                                sosButton.style.opacity = '1';
+                                sosStatus.textContent = '';
+                            }, 5000);
+                        })
+                        .catch(error => {
+                            sosStatus.textContent = t.sosError;
+                            sosStatus.style.color = 'var(--danger)';
+                            sosButton.disabled = false;
+                            sosButton.style.opacity = '1';
+                        });
+                    },
+                    function(error) {
+                        // Location access denied or error - still send SOS
+                        sosStatus.textContent = t.sosSuccess + ' (Location unavailable)';
+                        sosStatus.style.color = 'var(--warning)';
+                        
+                        fetch('/api/send_sos', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                location: null,
+                                timestamp: new Date().toISOString(),
+                                language: currentLanguage
+                            })
+                        })
+                        .catch(err => console.error('SOS Error:', err));
+
+                        setTimeout(() => {
+                            sosButton.disabled = false;
+                            sosButton.style.opacity = '1';
+                            sosStatus.textContent = '';
+                        }, 5000);
+                    }
+                );
+            } else {
+                sosStatus.textContent = t.sosSuccess + ' (Location unavailable)';
+                sosStatus.style.color = 'var(--warning)';
+                
+                setTimeout(() => {
+                    sosButton.disabled = false;
+                    sosButton.style.opacity = '1';
+                    sosStatus.textContent = '';
+                }, 5000);
+            }
+        }
+
+        // Update Flood Risk
+        function updateFloodRisk(riskPercentage) {
+            const riskMeter = document.getElementById('riskMeter');
+            const riskPercentageEl = document.getElementById('riskPercentage');
+            const riskLabel = document.getElementById('riskLabel');
+            const alertBanner = document.getElementById('alertBanner');
+            const t = translations[currentLanguage];
+
+            riskPercentageEl.textContent = riskPercentage + '%';
+            riskMeter.style.setProperty('--risk-percentage', riskPercentage);
+
+            // Remove all risk classes
+            riskMeter.classList.remove('risk-low', 'risk-medium', 'risk-high');
+
+            if (riskPercentage < 30) {
+                riskMeter.classList.add('risk-low');
+                riskLabel.textContent = t.riskLow;
+                alertBanner.classList.remove('show', 'warning', 'danger');
+            } else if (riskPercentage < 70) {
+                riskMeter.classList.add('risk-medium');
+                riskLabel.textContent = t.riskMedium;
+                alertBanner.classList.add('show', 'warning');
+                alertBanner.classList.remove('danger');
+            } else {
+                riskMeter.classList.add('risk-high');
+                riskLabel.textContent = t.riskHigh;
+                alertBanner.classList.add('show', 'danger');
+                alertBanner.classList.remove('warning');
+            }
+
+            updateRiskDescription();
+            updateAlertTime();
+        }
+
+        // Update Sensor Data with Heatmap Colors
+        function updateSensorData(data) {
+            document.getElementById('waterLevel').innerHTML = data.waterLevel + '<span class="data-unit">m</span>';
+            document.getElementById('rainfall').innerHTML = data.rainfall + '<span class="data-unit">mm</span>';
+            document.getElementById('temperature').innerHTML = data.temperature + '<span class="data-unit">°C</span>';
+            document.getElementById('humidity').innerHTML = data.humidity + '<span class="data-unit">%</span>';
+
+            // Update heatmap colors based on values
+            updateDataItemColor('waterItem', data.waterLevel, 5.0);
+            updateDataItemColor('rainfallItem', data.rainfall, 100);
+            updateDataItemColor('tempItem', data.temperature, 40);
+            updateDataItemColor('humidityItem', data.humidity, 90);
+        }
+
+        // Update data item color based on threshold
+        function updateDataItemColor(itemId, value, dangerThreshold) {
+            const item = document.getElementById(itemId);
+            const warningThreshold = dangerThreshold * 0.6;
+            
+            item.classList.remove('safe', 'warning', 'danger');
+            
+            if (value < warningThreshold) {
+                item.classList.add('safe');
+            } else if (value < dangerThreshold) {
+                item.classList.add('warning');
+            } else {
+                item.classList.add('danger');
+            }
+        }
+
+        // Update Connection Status
+        function updateConnectionStatus(isOnline) {
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
+            const t = translations[currentLanguage];
+
+            if (isOnline) {
+                statusDot.classList.remove('offline');
+                statusText.textContent = t.statusOnline;
+            } else {
+                statusDot.classList.add('offline');
+                statusText.textContent = t.statusOffline;
+            }
+        }
+
+        // Update Alert Time
+        function updateAlertTime() {
+            const alertTime = document.getElementById('alertTime');
+            const now = new Date();
+            alertTime.textContent = `Last updated: ${now.toLocaleTimeString()}`;
+        }
+
+        // Update Last Updated Time
+        function updateLastUpdatedTime() {
+            const updateTime = document.getElementById('updateTime');
+            const now = new Date();
+            updateTime.textContent = now.toLocaleTimeString();
+        }
+
+        // Fetch data from backend
+        function fetchData() {
+            fetch('/api/get_data')
+                .then(response => response.json())
+                .then(data => {
+                    updateFloodRisk(data.riskPercentage);
+                    updateSensorData(data.sensorData);
+                    updateConnectionStatus(data.isOnline);
+                    updateLastUpdatedTime();
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    updateConnectionStatus(false);
+                });
+        }
+
+        // Initialize - Start polling every 10 seconds
+        setInterval(fetchData, 10000);
+        setInterval(updateLastUpdatedTime, 1000);
+        fetchData();
+
+        // Initial time update
+        updateLastUpdatedTime();
+
+        // Demo mode - Simulate changing flood risk and sensor data
+        function simulateFloodRisk() {
+            const risks = [15, 25, 42, 58, 75, 88, 65, 45, 28, 18];
+            let index = 0;
+            
+            setInterval(() => {
+                updateFloodRisk(risks[index]);
+                
+                // Simulate sensor data changes
+                const sensorData = {
+                    waterLevel: (2.0 + Math.random() * 2).toFixed(1),
+                    rainfall: Math.floor(30 + Math.random() * 70),
+                    temperature: Math.floor(24 + Math.random() * 10),
+                    humidity: Math.floor(60 + Math.random() * 30)
+                };
+                updateSensorData(sensorData);
+                
+                index = (index + 1) % risks.length;
+            }, 8000);
+        }
+
+        // Uncomment for demo mode
+        // simulateFloodRisk();
+    </script>
+</body>
+</html>
