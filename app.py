@@ -49,6 +49,8 @@ POI_CACHE_TS = 0.0
 # Database helpers
 
 def get_db() -> sqlite3.Connection:
+    # Ensure DB directory exists for non-default paths (e.g. /tmp or /data).
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")

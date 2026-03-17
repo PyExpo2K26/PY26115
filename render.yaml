@@ -17,7 +17,7 @@ services:
       - key: SMTP_PASS
         sync: false
       - key: DB_PATH
-        value: /data/flood.db
+        value: /tmp/flood.db
       - key: RUN_SCHEDULER
         value: "1"
       - key: SKIP_SEED
