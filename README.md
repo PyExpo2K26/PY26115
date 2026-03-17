@@ -1,23 +1,60 @@
-1. Project Title:
-FloodGuard – River Flood Prediction and Simulation Web Application.
+# FloodGuard
 
-2. Problem Statement:
-Floods are one of the most dangerous natural disasters, causing severe loss of life and property every year. Traditional flood monitoring systems rely on manual observation and cannot provide early prediction. This project aims to develop a web-based application that uses machine learning techniques to predict river flood risk based on rainfall and river water level data and to simulate future flood scenarios, thereby helping in early warning and disaster preparedness.
+FloodGuard is a Flask web app that estimates flood risk for Chennai using rainfall, elevation, and user reports. It includes user login, an admin dashboard, and APIs for flood checks, history, and evacuation routing.
 
-3. Objectives:
-To collect and analyze historical rainfall and river level data.
-To build a machine learning model to predict flood occurrence.
-To classify flood risk into Low, Medium, and High levels.
-To simulate future flood conditions based on input parameters.
-To develop a user-friendly web interface for prediction and visualization.
+## Features
+- Flood risk checks by location with geocoding
+- Hourly background job to build risk history
+- Crowd-sourced flood depth reports
+- Evacuation routing using OpenStreetMap data
 
-4. Functional Requirements:
-User can enter rainfall and river level values.
-System predicts flood possibility.
-System displays flood risk level.
-System stores prediction results.
+## Local Setup
 
-5. Non-Functional Requirements:
-The system should provide accurate predictions.
-The system should respond within a few seconds.
-The interface should be simple and easy to use.
+1. Create a virtual environment and install dependencies:
+   ```bash
+   python -m venv .venv
+   .venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+2. Run the app:
+   ```bash
+   python app.py
+   ```
+
+The app runs at http://127.0.0.1:5000.
+
+## Docker
+
+Build and run the container:
+```bash
+docker build -t floodguard .
+docker run -p 10000:10000 -e SECRET_KEY=dev -e DB_PATH=/data/flood.db -v flood-data:/data floodguard
+```
+
+## Render Deployment (Docker)
+
+This project includes [render.yaml](render.yaml) for one-click deployment.
+
+1. Push this repository to GitHub.
+2. In Render, click **New +** → **Blueprint** and select the repo.
+3. Set required environment variables in the Render dashboard:
+   - `SECRET_KEY` (required)
+   - `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` (optional email alerts)
+4. Deploy. Render provisions a persistent disk at `/data` for `flood.db`.
+
+### Notes
+- `RUN_SCHEDULER=1` starts the hourly background job in the web process. Keep workers at 1 to avoid duplicate jobs.
+- `SKIP_SEED=1` disables the initial grid seeding if you want a faster first boot.
+- `ENABLE_ROUTING=0` disables evacuation routing if you want to reduce resource usage.
+
+## Environment Variables
+- `SECRET_KEY`: Flask session secret key
+- `DB_PATH`: Path to SQLite DB (default: `flood.db` in project root)
+- `RUN_SCHEDULER`: Set to `0` to disable hourly background job
+- `SKIP_SEED`: Set to `1` to skip location seeding
+- `ENABLE_ROUTING`: Set to `0` to disable evacuation routing
+- `GUNICORN_WORKERS`: Gunicorn worker count (default 1)
+- `GUNICORN_THREADS`: Gunicorn thread count per worker (default 4)
+- `GUNICORN_TIMEOUT`: Gunicorn timeout in seconds (default 120)
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`: Email notifications

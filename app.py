@@ -18,10 +18,10 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from werkzeug.security import check_password_hash, generate_password_hash
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "flood.db"
+DB_PATH = Path(os.environ.get("DB_PATH", BASE_DIR / "flood.db"))
 
 app = Flask(__name__)
-app.secret_key = "change-me-in-production"
+app.secret_key = os.environ.get("SECRET_KEY", "change-me-in-production")
 
 CHENNAI_BOUNDS = {
     "min_lat": 12.80,
@@ -999,6 +999,9 @@ def api_flood_check() -> Any:
 
 @app.route("/api/evac_route")
 def api_evac_route() -> Any:
+    if os.environ.get("ENABLE_ROUTING", "1") != "1":
+        return jsonify({"error": "Routing disabled"}), 503
+
     try:
         lat = float(request.args.get("lat", "0"))
         lon = float(request.args.get("lon", "0"))
@@ -1216,7 +1219,9 @@ def bootstrap() -> None:
     init_db()
     if os.environ.get("SKIP_SEED") != "1":
         threading.Thread(target=seed_locations, daemon=True).start()
-    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
+    if os.environ.get("RUN_SCHEDULER", "1") == "1" and (
+        os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug
+    ):
         start_scheduler()
 
 
