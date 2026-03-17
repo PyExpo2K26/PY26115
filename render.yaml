@@ -30,7 +30,3 @@ services:
         value: "4"
       - key: GUNICORN_TIMEOUT
         value: "120"
-    disk:
-      name: flood-data
-      mountPath: /data
-      sizeGB: 1
