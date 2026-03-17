@@ -5,6 +5,7 @@ import smtplib
 import sqlite3
 import threading
 import time
+import math
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from pathlib import Path
@@ -38,6 +39,11 @@ SMTP_PASS = os.environ.get("SMTP_PASS")
 
 SEED_LOCK = threading.Lock()
 DB_WRITE_LOCK = threading.Lock()
+ROUTE_GRAPH_LOCK = threading.Lock()
+ROUTE_GRAPH = None
+ROUTE_GRAPH_TS = 0.0
+POI_CACHE = []
+POI_CACHE_TS = 0.0
 
 
 # Database helpers
@@ -154,6 +160,18 @@ def init_db() -> None:
             UNIQUE (user_id, location_id, timestamp_hour),
             FOREIGN KEY (user_id) REFERENCES users (id),
             FOREIGN KEY (location_id) REFERENCES locations (id)
+        );
+        """
+    )
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS crowd_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            latitude REAL NOT NULL,
+            longitude REAL NOT NULL,
+            depth_label TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            expires_at TEXT NOT NULL
         );
         """
     )
@@ -306,7 +324,12 @@ def fetch_daily_forecast(lat: float, lon: float) -> list[dict[str, Any]]:
     return result
 
 
-def history_based_forecast(location_id: int, elevation_m: float) -> tuple[list[dict[str, Any]], str | None]:
+def history_based_forecast(
+    location_id: int,
+    elevation_m: float,
+    lat: float,
+    lon: float,
+) -> tuple[list[dict[str, Any]], str | None]:
     cutoff = (chennai_now() - timedelta(days=365)).isoformat(timespec="minutes")
     conn = get_db()
     rows = conn.execute(
@@ -323,9 +346,7 @@ def history_based_forecast(location_id: int, elevation_m: float) -> tuple[list[d
     daily_totals = [float(row["total_rain"] or 0.0) for row in rows]
     avg_daily = sum(daily_totals) / len(daily_totals) if daily_totals else 0.0
     try:
-        current_hour_rain = fetch_rainfall_current(
-            *next(iter([(loc["latitude"], loc["longitude"]) for loc in []]), (0.0, 0.0))
-        )
+        current_hour_rain = fetch_rainfall_current(lat, lon)
     except requests.RequestException:
         current_hour_rain = 0.0
 
@@ -505,6 +526,205 @@ def fetch_elevation(lat: float, lon: float) -> float:
 def predicted_time() -> str:
     # Simple placeholder for prediction time.
     return datetime.now().strftime("%I:%M %p")
+
+
+def mock_reservoir_levels() -> list[dict[str, Any]]:
+    base = datetime.now(timezone.utc).timestamp()
+    samples = [
+        ("Chembarambakkam", 3645.0),
+        ("Poondi", 3231.0),
+        ("Puzhal", 3300.0),
+    ]
+    results = []
+    for idx, (name, capacity) in enumerate(samples):
+        swing = (0.45 + (0.1 * idx))
+        level = capacity * (0.45 + 0.2 * (1 + (base % 3600) / 3600) * swing)
+        results.append({
+            "name": name,
+            "capacity": round(capacity, 1),
+            "current": round(min(level, capacity), 1),
+        })
+    return results
+
+
+def cleanup_expired_reports(conn: sqlite3.Connection) -> None:
+    now_ts = now_iso()
+    execute_with_retry(conn, "DELETE FROM crowd_reports WHERE expires_at < ?", (now_ts,))
+
+
+def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    r = 6371.0
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(a))
+
+
+def load_route_graph() -> Any:
+    global ROUTE_GRAPH, ROUTE_GRAPH_TS
+    now_ts = time.time()
+    if ROUTE_GRAPH is not None and (now_ts - ROUTE_GRAPH_TS) < 86400:
+        return ROUTE_GRAPH
+
+    with ROUTE_GRAPH_LOCK:
+        if ROUTE_GRAPH is not None and (now_ts - ROUTE_GRAPH_TS) < 86400:
+            return ROUTE_GRAPH
+        import osmnx as ox
+
+        ox.settings.log_console = False
+        ox.settings.use_cache = True
+        graph = ox.graph_from_place("Chennai, Tamil Nadu, India", network_type="drive", simplify=True)
+        ROUTE_GRAPH = graph
+        ROUTE_GRAPH_TS = time.time()
+        return ROUTE_GRAPH
+
+
+def load_pois() -> list[dict[str, Any]]:
+    global POI_CACHE, POI_CACHE_TS
+    now_ts = time.time()
+    if POI_CACHE and (now_ts - POI_CACHE_TS) < 86400:
+        return POI_CACHE
+
+    with ROUTE_GRAPH_LOCK:
+        if POI_CACHE and (now_ts - POI_CACHE_TS) < 86400:
+            return POI_CACHE
+        import osmnx as ox
+
+        tags = {
+            "amenity": ["hospital", "school", "college", "university", "bank", "fuel", "shopping_mall"],
+            "shop": ["mall"],
+        }
+        gdf = ox.features_from_place("Chennai, Tamil Nadu, India", tags=tags)
+        results: list[dict[str, Any]] = []
+        if not gdf.empty:
+            for _, row in gdf.iterrows():
+                geom = row.geometry
+                if geom is None:
+                    continue
+                if geom.geom_type == "Point":
+                    lat = float(geom.y)
+                    lon = float(geom.x)
+                else:
+                    centroid = geom.centroid
+                    lat = float(centroid.y)
+                    lon = float(centroid.x)
+                kind = row.get("amenity") or row.get("shop") or "destination"
+                name = row.get("name") or kind.replace("_", " ").title()
+                results.append({"name": str(name), "kind": str(kind), "lat": lat, "lon": lon})
+
+        POI_CACHE = results
+        POI_CACHE_TS = time.time()
+        return POI_CACHE
+
+
+def fetch_flood_points() -> list[tuple[float, float]]:
+    conn = get_db()
+    cleanup_expired_reports(conn)
+    now_ts = now_iso()
+    cutoff_weather = (chennai_now() - timedelta(hours=3)).isoformat(timespec="minutes")
+    cutoff_checks = (chennai_now() - timedelta(hours=6)).isoformat(timespec="minutes")
+    points: list[tuple[float, float]] = []
+
+    reports = conn.execute(
+        "SELECT latitude, longitude FROM crowd_reports WHERE expires_at > ?",
+        (now_ts,),
+    ).fetchall()
+    points.extend([(float(r["latitude"]), float(r["longitude"])) for r in reports])
+
+    rows = conn.execute(
+        """
+        SELECT locations.latitude, locations.longitude
+        FROM hourly_weather
+        JOIN locations ON locations.id = hourly_weather.location_id
+        WHERE hourly_weather.risk_level = 'High' AND hourly_weather.timestamp_hour >= ?
+        """,
+        (cutoff_weather,),
+    ).fetchall()
+    points.extend([(float(r["latitude"]), float(r["longitude"])) for r in rows])
+
+    checks = conn.execute(
+        """
+        SELECT latitude, longitude
+        FROM flood_checks
+        WHERE risk_level = 'High' AND created_at >= ?
+        """,
+        (cutoff_checks,),
+    ).fetchall()
+    points.extend([(float(r["latitude"]), float(r["longitude"])) for r in checks])
+    conn.close()
+    return points
+
+
+def build_safe_route(lat: float, lon: float) -> dict[str, Any] | None:
+    import osmnx as ox
+    import networkx as nx
+
+    graph = load_route_graph()
+    flooded_points = fetch_flood_points()
+    safe_graph = graph.copy()
+
+    for f_lat, f_lon in flooded_points:
+        try:
+            node = ox.distance.nearest_nodes(safe_graph, f_lon, f_lat)
+        except Exception:
+            continue
+        neighbors = list(safe_graph.neighbors(node))
+        safe_graph.remove_nodes_from([node, *neighbors])
+
+    pois = load_pois()
+    if not pois:
+        return None
+
+    origin = ox.distance.nearest_nodes(safe_graph, lon, lat)
+    candidates = sorted(
+        pois,
+        key=lambda p: haversine_km(lat, lon, p["lat"], p["lon"]),
+    )[:30]
+
+    routes = []
+    for poi in candidates:
+        try:
+            dest = ox.distance.nearest_nodes(safe_graph, poi["lon"], poi["lat"])
+            length_m = nx.shortest_path_length(safe_graph, origin, dest, weight="length")
+            routes.append({
+                "poi": poi,
+                "length_m": float(length_m),
+                "dest_node": dest,
+            })
+        except (nx.NetworkXNoPath, nx.NodeNotFound, ValueError):
+            continue
+
+    if not routes:
+        return None
+
+    routes.sort(key=lambda r: r["length_m"])
+    best = routes[0]
+    path_nodes = nx.shortest_path(safe_graph, origin, best["dest_node"], weight="length")
+    coords = [(safe_graph.nodes[n]["y"], safe_graph.nodes[n]["x"]) for n in path_nodes]
+
+    suggestions = []
+    for item in routes[:6]:
+        suggestions.append({
+            "name": item["poi"]["name"],
+            "kind": item["poi"]["kind"],
+            "distance_km": round(item["length_m"] / 1000.0, 2),
+        })
+
+    return {
+        "route": {
+            "coords": coords,
+            "distance_km": round(best["length_m"] / 1000.0, 2),
+            "destination": {
+                "name": best["poi"]["name"],
+                "kind": best["poi"]["kind"],
+                "lat": best["poi"]["lat"],
+                "lon": best["poi"]["lon"],
+            },
+        },
+        "suggestions": suggestions,
+    }
 
 
 # Routes
@@ -777,6 +997,30 @@ def api_flood_check() -> Any:
     })
 
 
+@app.route("/api/evac_route")
+def api_evac_route() -> Any:
+    try:
+        lat = float(request.args.get("lat", "0"))
+        lon = float(request.args.get("lon", "0"))
+    except ValueError:
+        return jsonify({"error": "Invalid coordinates"}), 400
+
+    if not is_within_chennai(lat, lon):
+        return jsonify({"error": "Outside Chennai"}), 400
+
+    try:
+        route = build_safe_route(lat, lon)
+    except ImportError:
+        return jsonify({"error": "Routing engine unavailable"}), 503
+    except Exception:
+        return jsonify({"error": "Unable to compute route"}), 500
+
+    if not route:
+        return jsonify({"error": "No safe route found"}), 404
+
+    return jsonify(route)
+
+
 @app.route("/api/history")
 def api_history() -> Any:
     raw_query = request.args.get("query", "").strip()
@@ -860,6 +1104,112 @@ def api_history() -> Any:
         "forecast": forecast,
         "forecast_error": forecast_error,
     })
+
+
+@app.route("/api/reservoirs")
+def api_reservoirs() -> Any:
+    return jsonify({"updated_at": now_iso(), "reservoirs": mock_reservoir_levels()})
+
+
+@app.route("/api/report", methods=["POST"])
+def api_report() -> Any:
+    payload = request.get_json(silent=True) or {}
+    try:
+        lat = float(payload.get("lat"))
+        lon = float(payload.get("lon"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid coordinates"}), 400
+
+    depth_label = str(payload.get("depth", "")).strip()
+    if not depth_label:
+        return jsonify({"error": "Missing depth"}), 400
+    if not is_within_chennai(lat, lon):
+        return jsonify({"error": "Outside Chennai"}), 400
+
+    expires_at = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+    conn = get_db()
+    with DB_WRITE_LOCK:
+        execute_with_retry(
+            conn,
+            """
+            INSERT INTO crowd_reports (latitude, longitude, depth_label, created_at, expires_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (lat, lon, depth_label, now_iso(), expires_at),
+        )
+        conn.commit()
+    conn.close()
+
+    return jsonify({"status": "ok"})
+
+
+@app.route("/api/reports")
+def api_reports() -> Any:
+    conn = get_db()
+    with DB_WRITE_LOCK:
+        cleanup_expired_reports(conn)
+        rows = conn.execute(
+            """
+            SELECT latitude, longitude, depth_label, created_at
+            FROM crowd_reports
+            ORDER BY created_at DESC
+            """
+        ).fetchall()
+        conn.commit()
+    conn.close()
+    reports = [
+        {
+            "lat": row["latitude"],
+            "lon": row["longitude"],
+            "depth": row["depth_label"],
+            "created_at": row["created_at"],
+        }
+        for row in rows
+    ]
+    return jsonify({"reports": reports})
+
+
+@app.route("/api/risk_zones")
+def api_risk_zones() -> Any:
+    cutoff = (chennai_now() - timedelta(hours=6)).isoformat(timespec="minutes")
+    conn = get_db()
+    rows = conn.execute(
+        """
+        SELECT locations.latitude, locations.longitude, hourly_weather.risk_score
+        FROM hourly_weather
+        JOIN locations ON locations.id = hourly_weather.location_id
+        WHERE hourly_weather.timestamp_hour >= ? AND hourly_weather.risk_level = 'High'
+        """,
+        (cutoff,),
+    ).fetchall()
+    conn.close()
+
+    zones = [
+        {"lat": row["latitude"], "lon": row["longitude"], "risk_score": row["risk_score"]}
+        for row in rows
+    ]
+    return jsonify({"zones": zones})
+
+
+@app.route("/api/risk_heat")
+def api_risk_heat() -> Any:
+    cutoff = (chennai_now() - timedelta(hours=6)).isoformat(timespec="minutes")
+    conn = get_db()
+    rows = conn.execute(
+        """
+        SELECT locations.latitude, locations.longitude, hourly_weather.risk_score
+        FROM hourly_weather
+        JOIN locations ON locations.id = hourly_weather.location_id
+        WHERE hourly_weather.timestamp_hour >= ?
+        """,
+        (cutoff,),
+    ).fetchall()
+    conn.close()
+    points = [
+        [row["latitude"], row["longitude"], max(0.1, float(row["risk_score"]) / 100.0)]
+        for row in rows
+    ]
+    return jsonify({"points": points})
 
 
 def bootstrap() -> None:

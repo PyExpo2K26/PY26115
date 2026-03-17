@@ -4,30 +4,30 @@
 <section class="panel">
   <div class="panel-header">
     <div>
-      <h2>Hello {{ name }}</h2>
-      <p>Check Chennai locations for flood risk and view your current position.</p>
+      <h2 id="greeting" data-i18n="greeting" data-name="{{ name }}">Hello {{ name }}</h2>
+      <p data-i18n="intro">Check Chennai locations for flood risk and view your current position.</p>
     </div>
-    <div class="status-pill" id="precheck-pill">No risk signals yet</div>
+    <div class="status-pill" id="precheck-pill" data-i18n="pill_idle">No risk signals yet</div>
+    <button class="btn ghost" id="lang-toggle" type="button" data-i18n="lang_toggle">தமிழ்</button>
   </div>
 
   <div class="grid-two">
     <div class="card">
-      <h3>Your current location</h3>
-      <p class="muted">Location is pulled from your browser and mapped below.</p>
-      <div class="mini-map" id="current-map"></div>
-      <div class="data-row" id="current-location">Waiting for location...</div>
+      <h3 data-i18n="current_title">Your current location</h3>
+      <p class="muted" data-i18n="current_desc">Location is pulled from your browser and mapped below.</p>
+      <div class="mini-map topo-map" id="current-map"></div>
+      <div class="data-row" id="current-location" data-i18n="current_wait">Waiting for location...</div>
     </div>
 
     <div class="card">
-      <h3>Check flood detect</h3>
-      <p class="muted">Type a Chennai location. If community risk exists, we warn you early.</p>
+      <h3 data-i18n="check_title">Check flood detect</h3>
+      <p class="muted" data-i18n="check_desc">Type a Chennai location. If community risk exists, we warn you early.</p>
       <label class="stacked">
-        Location in Chennai
-        <input type="text" id="location-input" placeholder="e.g. T Nagar, Velachery" autocomplete="off">
+        <span data-i18n="location_label">Location in Chennai</span>
+        <input type="text" id="location-input" placeholder="e.g. T Nagar, Velachery" autocomplete="off" data-i18n-placeholder="location_placeholder">
       </label>
-      <button class="btn primary" id="precheck-btn">Precheck risk</button>
-      <button class="btn ghost" id="check-btn">Run flood check</button>
-      <button class="btn ghost" id="history-btn">History + 7-day outlook</button>
+      <button class="btn primary" id="precheck-btn" data-i18n="precheck_btn">Precheck risk</button>
+      <button class="btn ghost" id="check-btn" data-i18n="check_btn">Run flood check</button>
       <div class="alert small" id="input-alert" hidden></div>
     </div>
   </div>
@@ -36,21 +36,37 @@
 <section class="panel">
   <div class="grid-two">
     <div class="card" id="result-card">
-      <h3>Flood report</h3>
+      <h3 data-i18n="report_title">Flood report</h3>
       <div class="report">
-        <div><span>Location:</span> <strong id="report-location">--</strong></div>
-        <div><span>Latitude:</span> <strong id="report-lat">--</strong></div>
-        <div><span>Longitude:</span> <strong id="report-lon">--</strong></div>
-        <div><span>Rainfall:</span> <strong id="report-rain">--</strong></div>
-        <div><span>Elevation:</span> <strong id="report-elev">--</strong></div>
-        <div><span>Risk score:</span> <strong id="report-score">--</strong></div>
-        <div><span>Risk level:</span> <strong id="report-level">--</strong></div>
-        <div><span>Predicted time:</span> <strong id="report-time">--</strong></div>
+        <div><span data-i18n="report_location">Location:</span> <strong id="report-location">--</strong></div>
+        <div><span data-i18n="report_lat">Latitude:</span> <strong id="report-lat">--</strong></div>
+        <div><span data-i18n="report_lon">Longitude:</span> <strong id="report-lon">--</strong></div>
+        <div><span data-i18n="report_rain">Rainfall:</span> <strong id="report-rain">--</strong></div>
+        <div><span data-i18n="report_elev">Elevation:</span> <strong id="report-elev">--</strong></div>
+        <div><span data-i18n="report_score">Risk score:</span> <strong id="report-score">--</strong></div>
+        <div><span data-i18n="report_level">Risk level:</span> <strong id="report-level">--</strong></div>
+        <div><span data-i18n="report_time">Predicted time:</span> <strong id="report-time">--</strong></div>
+      </div>
+      <div class="report-metrics">
+        <div class="metric">
+          <div class="metric-label" data-i18n="risk_meter">Risk score</div>
+          <div class="progress">
+            <div class="progress-fill" id="risk-progress"></div>
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-label" data-i18n="weather_icons">Weather signal</div>
+          <div class="weather-icons">
+            <span class="weather-icon rain" aria-hidden="true"></span>
+            <span class="weather-icon wind" aria-hidden="true"></span>
+            <span class="weather-icon cloud" aria-hidden="true"></span>
+          </div>
+        </div>
       </div>
     </div>
 
     <div class="card">
-      <h3>Location map</h3>
+      <h3 data-i18n="map_title">Location map</h3>
       <div class="map" id="result-map"></div>
     </div>
   </div>
@@ -59,16 +75,184 @@
 <section class="panel">
   <div class="grid-two">
     <div class="card">
-      <h3>History</h3>
-      <div id="history-meta" class="muted"></div>
-      <div class="history-list" id="history-list"></div>
+      <h3 data-i18n="evac_title">Smart evacuation route</h3>
+      <p class="muted" data-i18n="evac_desc">Automatic routing to the safest nearby infrastructure.</p>
+      <div class="map" id="evac-map"></div>
     </div>
     <div class="card">
-      <h3>Next 7 days (forecast)</h3>
-      <div class="history-list" id="forecast-list"></div>
+      <h3 data-i18n="evac_list_title">Nearest safe destinations</h3>
+      <div class="evac-status" id="evac-status" data-i18n="evac_idle">Run a flood check to generate a safe route.</div>
+      <div class="evac-list" id="evac-list"></div>
     </div>
   </div>
 </section>
+
+<section class="panel guide-panel">
+  <div class="guide-header">
+    <div>
+      <h3 data-i18n="guide_title">Disaster preparedness guide</h3>
+      <p class="muted" data-i18n="guide_intro">Clear, local steps to stay safe before, during, and after flooding.</p>
+    </div>
+    <div class="guide-pill" data-i18n="guide_pill">Community safety checklist</div>
+  </div>
+
+  <div class="guide-grid">
+    <article class="guide-card before">
+      <div class="guide-card-header">
+        <div class="guide-icon">01</div>
+        <div>
+          <h4 data-i18n="guide_before_title">Before flood</h4>
+          <p class="muted" data-i18n="guide_before_sub">Prepare early to avoid last-minute risk.</p>
+        </div>
+      </div>
+      <ul class="guide-list">
+        <li data-i18n="guide_before_item1">Store drinking water for at least 3 days.</li>
+        <li data-i18n="guide_before_item2">Prepare an emergency kit with torch, radio, and batteries.</li>
+        <li data-i18n="guide_before_item3">Move valuables and documents to higher levels.</li>
+        <li data-i18n="guide_before_item4">Charge phones and keep power banks ready.</li>
+        <li data-i18n="guide_before_item5">Save local helpline numbers and family contacts.</li>
+      </ul>
+    </article>
+
+    <article class="guide-card during">
+      <div class="guide-card-header">
+        <div class="guide-icon">02</div>
+        <div>
+          <h4 data-i18n="guide_during_title">During flood</h4>
+          <p class="muted" data-i18n="guide_during_sub">Prioritize safety and follow official guidance.</p>
+        </div>
+      </div>
+      <ul class="guide-list">
+        <li data-i18n="guide_during_item1">Avoid walking or driving through moving water.</li>
+        <li data-i18n="guide_during_item2">Turn off electricity and gas if water enters the home.</li>
+        <li data-i18n="guide_during_item3">Move to higher ground or upper floors.</li>
+        <li data-i18n="guide_during_item4">Follow evacuation instructions from authorities.</li>
+        <li data-i18n="guide_during_item5">Keep a radio or phone updates for alerts.</li>
+      </ul>
+    </article>
+
+    <article class="guide-card after">
+      <div class="guide-card-header">
+        <div class="guide-icon">03</div>
+        <div>
+          <h4 data-i18n="guide_after_title">After flood</h4>
+          <p class="muted" data-i18n="guide_after_sub">Recover carefully and reduce health risks.</p>
+        </div>
+      </div>
+      <ul class="guide-list">
+        <li data-i18n="guide_after_item1">Avoid contaminated water and disinfect surfaces.</li>
+        <li data-i18n="guide_after_item2">Check structural damage before re-entering rooms.</li>
+        <li data-i18n="guide_after_item3">Document damage with photos for claims.</li>
+        <li data-i18n="guide_after_item4">Dry and ventilate to prevent mold growth.</li>
+        <li data-i18n="guide_after_item5">Boil water until local supply is declared safe.</li>
+      </ul>
+    </article>
+  </div>
+</section>
+
+<section class="panel helpline-panel">
+  <div class="helpline-header">
+    <div>
+      <h3 data-i18n="help_title">Futuristic helpline</h3>
+      <p class="muted" data-i18n="help_intro">Tap to call Chennai emergency services.</p>
+    </div>
+    <div class="helpline-pill" data-i18n="help_pill">Warning Red</div>
+  </div>
+
+  <div class="helpline-grid">
+    <a class="helpline-card" href="tel:1913">
+      <div class="helpline-icon">!</div>
+      <div>
+        <div class="helpline-title" data-i18n="help_flood_title">Flood / Rain Emergency</div>
+        <div class="helpline-number">1913</div>
+        <div class="helpline-desc" data-i18n="help_1913">Chennai Corporation (waterlogging, flooding complaints)</div>
+      </div>
+    </a>
+    <a class="helpline-card" href="tel:1070">
+      <div class="helpline-icon">!</div>
+      <div>
+        <div class="helpline-title" data-i18n="help_flood_title">Flood / Rain Emergency</div>
+        <div class="helpline-number">1070</div>
+        <div class="helpline-desc" data-i18n="help_1070">Tamil Nadu State Disaster Helpline</div>
+      </div>
+    </a>
+    <a class="helpline-card" href="tel:1077">
+      <div class="helpline-icon">!</div>
+      <div>
+        <div class="helpline-title" data-i18n="help_flood_title">Flood / Rain Emergency</div>
+        <div class="helpline-number">1077</div>
+        <div class="helpline-desc" data-i18n="help_1077">District Disaster Control Room</div>
+      </div>
+    </a>
+    <a class="helpline-card" href="tel:9445869848">
+      <div class="helpline-icon">!</div>
+      <div>
+        <div class="helpline-title" data-i18n="help_flood_title">Flood / Rain Emergency</div>
+        <div class="helpline-number">9445869848</div>
+        <div class="helpline-desc" data-i18n="help_wa">Flood helpline WhatsApp (TN)</div>
+      </div>
+    </a>
+
+    <a class="helpline-card" href="tel:112">
+      <div class="helpline-icon">+</div>
+      <div>
+        <div class="helpline-title" data-i18n="help_general_title">General Emergency</div>
+        <div class="helpline-number">112</div>
+        <div class="helpline-desc" data-i18n="help_112">National Emergency Number (all services)</div>
+      </div>
+    </a>
+    <a class="helpline-card" href="tel:100">
+      <div class="helpline-icon">+</div>
+      <div>
+        <div class="helpline-title" data-i18n="help_general_title">General Emergency</div>
+        <div class="helpline-number">100</div>
+        <div class="helpline-desc" data-i18n="help_100">Police</div>
+      </div>
+    </a>
+    <a class="helpline-card" href="tel:101">
+      <div class="helpline-icon">+</div>
+      <div>
+        <div class="helpline-title" data-i18n="help_general_title">General Emergency</div>
+        <div class="helpline-number">101</div>
+        <div class="helpline-desc" data-i18n="help_101">Fire</div>
+      </div>
+    </a>
+    <a class="helpline-card" href="tel:108">
+      <div class="helpline-icon">+</div>
+      <div>
+        <div class="helpline-title" data-i18n="help_general_title">General Emergency</div>
+        <div class="helpline-number">108</div>
+        <div class="helpline-desc" data-i18n="help_108">Ambulance</div>
+      </div>
+    </a>
+
+    <a class="helpline-card" href="tel:04425619204">
+      <div class="helpline-icon">C</div>
+      <div>
+        <div class="helpline-title" data-i18n="help_city_title">Chennai Control Room</div>
+        <div class="helpline-number">044-25619204</div>
+        <div class="helpline-desc" data-i18n="help_city">Chennai Control Room</div>
+      </div>
+    </a>
+    <a class="helpline-card" href="tel:04425619206">
+      <div class="helpline-icon">C</div>
+      <div>
+        <div class="helpline-title" data-i18n="help_city_title">Chennai Control Room</div>
+        <div class="helpline-number">044-25619206</div>
+        <div class="helpline-desc" data-i18n="help_city">Chennai Control Room</div>
+      </div>
+    </a>
+    <a class="helpline-card" href="tel:04425619207">
+      <div class="helpline-icon">C</div>
+      <div>
+        <div class="helpline-title" data-i18n="help_city_title">Chennai Control Room</div>
+        <div class="helpline-number">044-25619207</div>
+        <div class="helpline-desc" data-i18n="help_city">Chennai Control Room</div>
+      </div>
+    </a>
+  </div>
+</section>
+
 {% endblock %}
 
 {% block scripts %}
