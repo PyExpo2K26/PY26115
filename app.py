@@ -300,9 +300,23 @@ def fetch_rainfall_current(lat: float, lon: float) -> float:
         "forecast_days": 1,
         "timezone": CHENNAI_TZ,
     }
-    resp = requests.get(url, params=params, timeout=15)
-    resp.raise_for_status()
-    data = resp.json()
+    last_exc = None
+    for attempt in range(3):
+        try:
+            resp = requests.get(
+                url,
+                params=params,
+                timeout=15,
+                headers={"User-Agent": "floodguard/1.0"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            break
+        except requests.RequestException as exc:
+            last_exc = exc
+            time.sleep(0.4 * (attempt + 1))
+    else:
+        raise last_exc
     hourly = data.get("hourly", {})
     times = hourly.get("time", [])
     precipitation = hourly.get("precipitation", [])
@@ -523,9 +537,23 @@ def fetch_reverse(lat: float, lon: float) -> dict[str, Any] | None:
 
 def fetch_elevation(lat: float, lon: float) -> float:
     url = "https://api.open-elevation.com/api/v1/lookup"
-    resp = requests.get(url, params={"locations": f"{lat},{lon}"}, timeout=10)
-    resp.raise_for_status()
-    data = resp.json()
+    last_exc = None
+    for attempt in range(3):
+        try:
+            resp = requests.get(
+                url,
+                params={"locations": f"{lat},{lon}"},
+                timeout=10,
+                headers={"User-Agent": "floodguard/1.0"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            break
+        except requests.RequestException as exc:
+            last_exc = exc
+            time.sleep(0.4 * (attempt + 1))
+    else:
+        raise last_exc
     results = data.get("results", [])
     if not results:
         return 0.0
@@ -948,9 +976,13 @@ def api_flood_check() -> Any:
 
     try:
         rainfall_mm = fetch_rainfall_current(lat, lon)
+    except requests.RequestException:
+        return jsonify({"error": "Rainfall service unavailable"}), 503
+
+    try:
         elevation_m = fetch_elevation(lat, lon)
     except requests.RequestException:
-        return jsonify({"error": "Weather service unavailable"}), 503
+        elevation_m = 0.0
     score = risk_score_from(rainfall_mm, elevation_m)
     level = risk_level_from(score)
     pred_time = predicted_time()
