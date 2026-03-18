@@ -243,12 +243,18 @@ def seed_locations() -> None:
             conn.close()
             return
 
+        seed_mode = os.environ.get("SEED_MODE", "fast").lower()
+        use_elevation = seed_mode not in {"fast", "lite"}
+
         points = generate_grid()
         batch = []
         for lat, lon in points:
-            try:
-                elevation = fetch_elevation(lat, lon)
-            except requests.RequestException:
+            if use_elevation:
+                try:
+                    elevation = fetch_elevation(lat, lon)
+                except requests.RequestException:
+                    elevation = 0.0
+            else:
                 elevation = 0.0
             batch.append((lat, lon, elevation, now_iso()))
             if len(batch) >= 200:
@@ -258,7 +264,8 @@ def seed_locations() -> None:
                 )
                 conn.commit()
                 batch.clear()
-                time.sleep(0.05)
+                if use_elevation:
+                    time.sleep(0.05)
 
         if batch:
             conn.executemany(
@@ -956,8 +963,8 @@ def api_flood_check() -> Any:
             """
             INSERT INTO flood_checks (
                 user_id, location_query, location_name, latitude, longitude,
-                rainfall_mm, elevation_m, risk_level, risk_score, predicted_time, created_at, location_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                rainfall_mm, elevation_m, risk_level, risk_score, predicted_time, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 session["user_id"],
@@ -971,7 +978,6 @@ def api_flood_check() -> Any:
                 score,
                 pred_time,
                 now_iso(),
-                location_id,
             ),
         )
         if location_id:
@@ -1220,7 +1226,11 @@ def api_risk_heat() -> Any:
 def bootstrap() -> None:
     init_db()
     if os.environ.get("SKIP_SEED") != "1":
-        threading.Thread(target=seed_locations, daemon=True).start()
+        seed_sync = os.environ.get("SEED_SYNC", "1") == "1"
+        if seed_sync:
+            seed_locations()
+        else:
+            threading.Thread(target=seed_locations, daemon=True).start()
     if os.environ.get("RUN_SCHEDULER", "1") == "1" and (
         os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug
     ):
