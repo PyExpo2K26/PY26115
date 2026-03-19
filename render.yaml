@@ -2,6 +2,7 @@ services:
   - type: web
     name: floodguard
     env: docker
+    rootDir: 01-code
     plan: free
     autoDeploy: true
     healthCheckPath: /
