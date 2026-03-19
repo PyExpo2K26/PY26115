@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="panel">
+  <h2>Admin control room</h2>
+  <p>Track all user flood checks with timing and predicted risk.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Email</th>
+          <th>Location</th>
+          <th>Lat</th>
+          <th>Lon</th>
+          <th>Rainfall</th>
+          <th>Elevation</th>
+          <th>Risk</th>
+          <th>Score</th>
+          <th>Predicted</th>
+          <th>Created</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr>
+          <td>{{ row.user_name }}</td>
+          <td>{{ row.user_email }}</td>
+          <td>{{ row.location_name }}</td>
+          <td>{{ '%.4f'|format(row.latitude) }}</td>
+          <td>{{ '%.4f'|format(row.longitude) }}</td>
+          <td>{{ '%.1f'|format(row.rainfall_mm) }} mm</td>
+          <td>{{ '%.1f'|format(row.elevation_m) }} m</td>
+          <td>{{ row.risk_level }}</td>
+          <td>{{ row.risk_score }}</td>
+          <td>{{ row.predicted_time }}</td>
+          <td>{{ row.created_at }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="11">No flood checks yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

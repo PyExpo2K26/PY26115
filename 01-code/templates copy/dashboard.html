@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="panel">
+  <div class="panel-header">
+    <div>
+      <h2>Hello {{ name }}</h2>
+      <p>Check Chennai locations for flood risk and view your current position.</p>
+    </div>
+    <div class="status-pill" id="precheck-pill">No risk signals yet</div>
+  </div>
+
+  <div class="grid-two">
+    <div class="card">
+      <h3>Your current location</h3>
+      <p class="muted">Location is pulled from your browser and mapped below.</p>
+      <div class="mini-map" id="current-map"></div>
+      <div class="data-row" id="current-location">Waiting for location...</div>
+    </div>
+
+    <div class="card">
+      <h3>Check flood detect</h3>
+      <p class="muted">Type a Chennai location. If community risk exists, we warn you early.</p>
+      <label class="stacked">
+        Location in Chennai
+        <input type="text" id="location-input" placeholder="e.g. T Nagar, Velachery" autocomplete="off">
+      </label>
+      <button class="btn primary" id="precheck-btn">Precheck risk</button>
+      <button class="btn ghost" id="check-btn">Run flood check</button>
+      <button class="btn ghost" id="history-btn">History + 7-day outlook</button>
+      <div class="alert small" id="input-alert" hidden></div>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="grid-two">
+    <div class="card" id="result-card">
+      <h3>Flood report</h3>
+      <div class="report">
+        <div><span>Location:</span> <strong id="report-location">--</strong></div>
+        <div><span>Latitude:</span> <strong id="report-lat">--</strong></div>
+        <div><span>Longitude:</span> <strong id="report-lon">--</strong></div>
+        <div><span>Rainfall:</span> <strong id="report-rain">--</strong></div>
+        <div><span>Elevation:</span> <strong id="report-elev">--</strong></div>
+        <div><span>Risk score:</span> <strong id="report-score">--</strong></div>
+        <div><span>Risk level:</span> <strong id="report-level">--</strong></div>
+        <div><span>Predicted time:</span> <strong id="report-time">--</strong></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Location map</h3>
+      <div class="map" id="result-map"></div>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="grid-two">
+    <div class="card">
+      <h3>History</h3>
+      <div id="history-meta" class="muted"></div>
+      <div class="history-list" id="history-list"></div>
+    </div>
+    <div class="card">
+      <h3>Next 7 days (forecast)</h3>
+      <div class="history-list" id="forecast-list"></div>
+    </div>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

@@ -2,7 +2,7 @@ services:
   - type: web
     name: floodguard
     env: docker
-    rootDir: App
+    rootDir: 01-code
     plan: free
     autoDeploy: true
     healthCheckPath: /
@@ -20,15 +20,15 @@ services:
       - key: DB_PATH
         value: /tmp/flood.db
       - key: RUN_SCHEDULER
-        value: "1"
-      - key: SKIP_SEED
         value: "0"
-      - key: SEED_SYNC
+      - key: SKIP_SEED
         value: "1"
+      - key: SEED_SYNC
+        value: "0"
       - key: SEED_MODE
         value: "fast"
       - key: ENABLE_ROUTING
-        value: "1"
+        value: "0"
       - key: GUNICORN_WORKERS
         value: "1"
       - key: GUNICORN_THREADS
