@@ -32,6 +32,6 @@ services:
       - key: GUNICORN_WORKERS
         value: "1"
       - key: GUNICORN_THREADS
-        value: "4"
+        value: "1"
       - key: GUNICORN_TIMEOUT
         value: "120"
