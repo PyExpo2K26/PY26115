@@ -2,6 +2,7 @@ services:
   - type: web
     name: floodguard
     env: docker
+    rootDir: 01-code
     plan: free
     autoDeploy: true
     healthCheckPath: /
@@ -17,11 +18,15 @@ services:
       - key: SMTP_PASS
         sync: false
       - key: DB_PATH
-        value: /data/flood.db
+        value: /tmp/flood.db
       - key: RUN_SCHEDULER
         value: "1"
       - key: SKIP_SEED
         value: "0"
+      - key: SEED_SYNC
+        value: "1"
+      - key: SEED_MODE
+        value: "fast"
       - key: ENABLE_ROUTING
         value: "1"
       - key: GUNICORN_WORKERS
@@ -30,7 +35,3 @@ services:
         value: "4"
       - key: GUNICORN_TIMEOUT
         value: "120"
-    disk:
-      name: flood-data
-      mountPath: /data
-      sizeGB: 1

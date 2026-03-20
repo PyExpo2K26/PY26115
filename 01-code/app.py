@@ -49,6 +49,8 @@ POI_CACHE_TS = 0.0
 # Database helpers
 
 def get_db() -> sqlite3.Connection:
+    # Ensure DB directory exists for non-default paths (e.g. /tmp or /data).
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH, timeout=30, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
@@ -241,12 +243,18 @@ def seed_locations() -> None:
             conn.close()
             return
 
+        seed_mode = os.environ.get("SEED_MODE", "fast").lower()
+        use_elevation = seed_mode not in {"fast", "lite"}
+
         points = generate_grid()
         batch = []
         for lat, lon in points:
-            try:
-                elevation = fetch_elevation(lat, lon)
-            except requests.RequestException:
+            if use_elevation:
+                try:
+                    elevation = fetch_elevation(lat, lon)
+                except requests.RequestException:
+                    elevation = 0.0
+            else:
                 elevation = 0.0
             batch.append((lat, lon, elevation, now_iso()))
             if len(batch) >= 200:
@@ -256,7 +264,8 @@ def seed_locations() -> None:
                 )
                 conn.commit()
                 batch.clear()
-                time.sleep(0.05)
+                if use_elevation:
+                    time.sleep(0.05)
 
         if batch:
             conn.executemany(
@@ -291,9 +300,23 @@ def fetch_rainfall_current(lat: float, lon: float) -> float:
         "forecast_days": 1,
         "timezone": CHENNAI_TZ,
     }
-    resp = requests.get(url, params=params, timeout=15)
-    resp.raise_for_status()
-    data = resp.json()
+    last_exc = None
+    for attempt in range(3):
+        try:
+            resp = requests.get(
+                url,
+                params=params,
+                timeout=15,
+                headers={"User-Agent": "floodguard/1.0"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            break
+        except requests.RequestException as exc:
+            last_exc = exc
+            time.sleep(0.4 * (attempt + 1))
+    else:
+        raise last_exc
     hourly = data.get("hourly", {})
     times = hourly.get("time", [])
     precipitation = hourly.get("precipitation", [])
@@ -514,9 +537,23 @@ def fetch_reverse(lat: float, lon: float) -> dict[str, Any] | None:
 
 def fetch_elevation(lat: float, lon: float) -> float:
     url = "https://api.open-elevation.com/api/v1/lookup"
-    resp = requests.get(url, params={"locations": f"{lat},{lon}"}, timeout=10)
-    resp.raise_for_status()
-    data = resp.json()
+    last_exc = None
+    for attempt in range(3):
+        try:
+            resp = requests.get(
+                url,
+                params={"locations": f"{lat},{lon}"},
+                timeout=10,
+                headers={"User-Agent": "floodguard/1.0"},
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            break
+        except requests.RequestException as exc:
+            last_exc = exc
+            time.sleep(0.4 * (attempt + 1))
+    else:
+        raise last_exc
     results = data.get("results", [])
     if not results:
         return 0.0
@@ -939,9 +976,13 @@ def api_flood_check() -> Any:
 
     try:
         rainfall_mm = fetch_rainfall_current(lat, lon)
+    except requests.RequestException:
+        return jsonify({"error": "Rainfall service unavailable"}), 503
+
+    try:
         elevation_m = fetch_elevation(lat, lon)
     except requests.RequestException:
-        return jsonify({"error": "Weather service unavailable"}), 503
+        elevation_m = 0.0
     score = risk_score_from(rainfall_mm, elevation_m)
     level = risk_level_from(score)
     pred_time = predicted_time()
@@ -954,8 +995,8 @@ def api_flood_check() -> Any:
             """
             INSERT INTO flood_checks (
                 user_id, location_query, location_name, latitude, longitude,
-                rainfall_mm, elevation_m, risk_level, risk_score, predicted_time, created_at, location_id
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                rainfall_mm, elevation_m, risk_level, risk_score, predicted_time, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 session["user_id"],
@@ -969,7 +1010,6 @@ def api_flood_check() -> Any:
                 score,
                 pred_time,
                 now_iso(),
-                location_id,
             ),
         )
         if location_id:
@@ -1218,7 +1258,11 @@ def api_risk_heat() -> Any:
 def bootstrap() -> None:
     init_db()
     if os.environ.get("SKIP_SEED") != "1":
-        threading.Thread(target=seed_locations, daemon=True).start()
+        seed_sync = os.environ.get("SEED_SYNC", "1") == "1"
+        if seed_sync:
+            seed_locations()
+        else:
+            threading.Thread(target=seed_locations, daemon=True).start()
     if os.environ.get("RUN_SCHEDULER", "1") == "1" and (
         os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug
     ):
