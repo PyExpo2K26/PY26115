@@ -300,6 +300,7 @@ def fetch_rainfall_current(lat: float, lon: float) -> float:
         "forecast_days": 1,
         "timezone": CHENNAI_TZ,
     }
+    import logging
     last_exc = None
     for attempt in range(3):
         try:
@@ -311,11 +312,15 @@ def fetch_rainfall_current(lat: float, lon: float) -> float:
             )
             resp.raise_for_status()
             data = resp.json()
+            # Log the API response for debugging
+            logging.warning(f"Rainfall API response for ({lat},{lon}): {data}")
             break
         except requests.RequestException as exc:
             last_exc = exc
+            logging.error(f"Rainfall API error (attempt {attempt+1}) for ({lat},{lon}): {exc}")
             time.sleep(0.4 * (attempt + 1))
     else:
+        logging.critical(f"Rainfall API failed for ({lat},{lon}) after 3 attempts: {last_exc}")
         raise last_exc
     hourly = data.get("hourly", {})
     times = hourly.get("time", [])
@@ -324,6 +329,8 @@ def fetch_rainfall_current(lat: float, lon: float) -> float:
     if hour_key in times:
         idx = times.index(hour_key)
         return float(precipitation[idx])
+    # Log if hour_key is missing
+    logging.warning(f"Hour key {hour_key} not found in rainfall times for ({lat},{lon}). Times: {times}")
     return float(max(precipitation) if precipitation else 0.0)
 
 
@@ -537,6 +544,7 @@ def fetch_reverse(lat: float, lon: float) -> dict[str, Any] | None:
 
 def fetch_elevation(lat: float, lon: float) -> float:
     url = "https://api.open-elevation.com/api/v1/lookup"
+    import logging
     last_exc = None
     for attempt in range(3):
         try:
@@ -548,14 +556,19 @@ def fetch_elevation(lat: float, lon: float) -> float:
             )
             resp.raise_for_status()
             data = resp.json()
+            # Log the API response for debugging
+            logging.warning(f"Elevation API response for ({lat},{lon}): {data}")
             break
         except requests.RequestException as exc:
             last_exc = exc
+            logging.error(f"Elevation API error (attempt {attempt+1}) for ({lat},{lon}): {exc}")
             time.sleep(0.4 * (attempt + 1))
     else:
+        logging.critical(f"Elevation API failed for ({lat},{lon}) after 3 attempts: {last_exc}")
         raise last_exc
     results = data.get("results", [])
     if not results:
+        logging.warning(f"No elevation results for ({lat},{lon}) in API response.")
         return 0.0
     return float(results[0].get("elevation", 0.0))
 
@@ -974,14 +987,17 @@ def api_flood_check() -> Any:
     if not is_within_chennai(lat, lon):
         return jsonify({"error": "Outside Chennai"}), 400
 
+    import logging
     try:
         rainfall_mm = fetch_rainfall_current(lat, lon)
-    except requests.RequestException:
-        return jsonify({"error": "Rainfall service unavailable"}), 503
+    except Exception as e:
+        logging.error(f"Rainfall fetch failed for ({lat},{lon}): {e}")
+        return jsonify({"error": "Rainfall service unavailable", "details": str(e)}), 503
 
     try:
         elevation_m = fetch_elevation(lat, lon)
-    except requests.RequestException:
+    except Exception as e:
+        logging.error(f"Elevation fetch failed for ({lat},{lon}): {e}")
         elevation_m = 0.0
     score = risk_score_from(rainfall_mm, elevation_m)
     level = risk_level_from(score)
