@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="panel narrow">
+  <h2>Welcome back</h2>
+  <p>Login to view live Chennai flood checks.</p>
+  {% if error %}
+    <div class="alert">{{ error }}</div>
+  {% endif %}
+  <form action="{{ url_for('login') }}" method="post" class="form-grid">
+    <label>
+      Email
+      <input type="email" name="email" required>
+    </label>
+    <label>
+      Password
+      <input type="password" name="password" required>
+    </label>
+    <button type="submit" class="btn primary">Login</button>
+  </form>
+</section>
+{% endblock %}

@@ -1039,7 +1039,7 @@ def api_flood_check() -> Any:
 
 @app.route("/api/evac_route")
 def api_evac_route() -> Any:
-    if os.environ.get("ENABLE_ROUTING", "0") != "1":
+    if os.environ.get("ENABLE_ROUTING", "1") != "1":
         return jsonify({"error": "Routing disabled"}), 503
 
     try:
@@ -1257,13 +1257,13 @@ def api_risk_heat() -> Any:
 
 def bootstrap() -> None:
     init_db()
-    if os.environ.get("SKIP_SEED", "1") != "1":
-        seed_sync = os.environ.get("SEED_SYNC", "0") == "1"
+    if os.environ.get("SKIP_SEED") != "1":
+        seed_sync = os.environ.get("SEED_SYNC", "1") == "1"
         if seed_sync:
             seed_locations()
         else:
             threading.Thread(target=seed_locations, daemon=True).start()
-    if os.environ.get("RUN_SCHEDULER", "0") == "1" and (
+    if os.environ.get("RUN_SCHEDULER", "1") == "1" and (
         os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug
     ):
         start_scheduler()
