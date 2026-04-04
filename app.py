@@ -1004,7 +1004,7 @@ def api_flood_check() -> Any:
         elevation_m = 0.0
     score = risk_score_from(rainfall_mm, elevation_m)
     level = risk_level_from(score)
-    pred_time = predicted_time()
+    pred_time = now_iso()
     location_id = nearest_location_id(lat, lon)
 
     conn = get_db()
