@@ -189,7 +189,7 @@ import pytz
 
 def now_iso() -> str:
     ist = pytz.timezone('Asia/Kolkata')
-    return datetime.now(ist).isoformat()
+    return datetime.now(ist).strftime("%I:%M %p")
 
 def is_within_chennai(lat: float, lon: float) -> bool:
     return (
