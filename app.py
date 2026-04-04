@@ -184,9 +184,12 @@ def init_db() -> None:
 
 # Utility helpers
 
-def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+from datetime import datetime
+import pytz
 
+def now_iso() -> str:
+    ist = pytz.timezone('Asia/Kolkata')
+    return datetime.now(ist).isoformat()
 
 def is_within_chennai(lat: float, lon: float) -> bool:
     return (
